@@ -1,7 +1,7 @@
 window.VIOLIN_QA_DATA = {
   "source": {
-    "path": "/Users/ngmt.mtk/qa300-book-2026/chapters_v2",
-    "generated_at": "2026-07-06T02:08:57.080Z",
+    "path": "qa300-book-2026/chapters_v2",
+    "generated_at": "2026-07-06T02:38:02.653Z",
     "count": 200
   },
   "chapters": [

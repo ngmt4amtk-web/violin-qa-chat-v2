@@ -88,7 +88,7 @@ function copyQuestionAsset(assetName) {
 const questions = readQuestions();
 const payload = {
   source: {
-    path: chaptersRoot,
+    path: "qa300-book-2026/chapters_v2",
     generated_at: new Date().toISOString(),
     count: questions.length,
   },
