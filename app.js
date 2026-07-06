@@ -506,7 +506,8 @@ function showAfterSpeakerChoices(question, speaker, turns, context = {}) {
 function showPrescription(question) {
   addUserMessage("今週やることだけ知りたい");
   addMessage("相談室", "まずやることだけに絞ります。全部を一度にやらなくて大丈夫です。", { kind: "system" });
-  question.prescription.forEach((item, index) => {
+  const prescription = question.app?.prescription || question.prescription;
+  prescription.forEach((item, index) => {
     addMessage("身体専門家", `${index + 1}. ${removeDenseParentheses(item)}`, { kind: "prescription", showName: index === 0 });
   });
   maybeShowScoreAsset(question);
@@ -743,6 +744,8 @@ function nextSpeakerAfter(speaker) {
 }
 
 function answerTurns(question, speaker) {
+  const answer = question.app?.speaker_answers?.[speaker];
+  if (answer) return [{ speaker, text: answer }];
   return question.discussion.filter((turn) => turn.speaker === speaker);
 }
 
@@ -860,6 +863,7 @@ function simplifySentence(sentence) {
 }
 
 function makeChoiceTitle(question) {
+  if (question.app?.title) return question.app.title;
   return question.title
     .replace(/された$/u, "される")
     .replace(/しんどい$/u, "つらい")
@@ -868,12 +872,14 @@ function makeChoiceTitle(question) {
 }
 
 function makeAskText(question) {
-  const cleaned = sanitizeQuestion(question.question);
-  return `これで困っています。\n${cleaned}`;
+  const cleaned = question.app?.question || sanitizeQuestion(question.question);
+  const profile = question.app?.profile || profileForQuestion(question);
+  return `これで困っています。\n${cleaned}${profile ? `\n\n${profile}` : ""}`;
 }
 
 function makePlainLead(question) {
-  const first = removeDenseParentheses(question.prescription[0] || "");
+  const prescription = question.app?.prescription || question.prescription;
+  const first = removeDenseParentheses(prescription[0] || "");
   if (!first) return "まずは状況を分けて考えます。今すぐ全部を直そうとせず、できるところから見ます。";
   return `まず短く言うと、最初に見るのはここです。\n${first}`;
 }
@@ -890,6 +896,19 @@ function sanitizeQuestion(text) {
     .replace(/再入門して[^\s、。]+[、,]?/gu, "")
     .replace(/\s+/gu, " ")
     .trim();
+}
+
+function profileForQuestion(question) {
+  const persona = String(question.persona || "");
+  const childMatch = persona.match(/^(.+?)[（(]([^）)]+)[）)]の(母|父|保護者)$/u);
+  if (childMatch) return `相談の前提: ${childMatch[2]}の子どもについて、${childMatch[3]}からの相談。`;
+  const namedMatch = persona.match(/^[^（(]+[（(]([^）)]+)[）)]$/u);
+  const summary = (namedMatch ? namedMatch[1] : persona)
+    .replace(/^[A-Z]\.?[A-Z]?\.?さん/u, "")
+    .replace(/^[A-Z]\.?[A-Z]?\.?/u, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+  return summary ? `相談の前提: ${summary}。` : "";
 }
 
 function removeDenseParentheses(text) {
@@ -943,6 +962,8 @@ function keywordMatchesGroup(group, question) {
 
 function groupMatchText(question) {
   return normalize([
+    question.app?.title,
+    question.app?.question,
     question.title,
     makeChoiceTitle(question),
   ].join(" "));
