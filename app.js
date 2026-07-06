@@ -21,44 +21,65 @@ const SPEAKERS = {
 
 const PROBLEM_GROUPS = [
   {
-    id: "body",
-    label: "構えると体がつらい",
-    detail: "姿勢、肩、首、痛み、疲れ",
-    chapters: [1, 13],
+    id: "pain",
+    label: "痛み・疲れがある",
+    detail: "肩、首、顎、指、耳、腱鞘炎など",
+    keywords: ["痛", "疲", "姿勢がつら", "腱鞘炎", "痣", "内出血", "キーン", "冷え", "目が限界", "再発"],
+    chapterHints: [13],
   },
   {
-    id: "bow",
-    label: "弓や右手がうまくいかない",
-    detail: "ボーイング、音色、スピッカート",
-    chapters: [2, 3, 8],
+    id: "setup",
+    label: "構え・脱力で迷う",
+    detail: "姿勢、肩当て、顎当て、力み、支え",
+    keywords: ["構え", "姿勢", "骨盤", "反り腰", "肩当て", "顎当て", "脱力", "力み", "支え", "固ま", "高さ", "角度"],
+    chapterHints: [1],
   },
   {
-    id: "left",
-    label: "音程や左手で困っている",
-    detail: "指、シフト、ビブラート",
-    chapters: [4, 5, 6],
+    id: "bow-sound",
+    label: "弓・音色がうまくいかない",
+    detail: "右手、ボーイング、音量、ガリガリ音",
+    keywords: ["弓", "右腕", "右手", "ロングトーン", "移弦", "音色", "音量", "ガリ", "キーキー", "ざらつ", "駒", "鳴ら", "接点", "スピッカート", "ソティエ", "リコシェ", "スタッカート"],
+    chapterHints: [2, 3, 8],
   },
   {
-    id: "music",
-    label: "曲になると崩れる",
-    detail: "速いパッセージ、読譜、リズム、表現",
-    chapters: [7, 9, 10],
+    id: "left-hand",
+    label: "音程・左手で困る",
+    detail: "指、シフト、ビブラート、ポジション",
+    keywords: ["音程", "小指", "親指", "指が", "指を", "指の", "手首", "ネック", "シフト", "サード", "ポジション", "ビブラート", "トリル", "跳躍", "左手"],
+    chapterHints: [4, 5, 6],
   },
   {
-    id: "practice",
-    label: "練習や本番がしんどい",
-    detail: "続かない、あがる、暗譜、先生との関係",
-    chapters: [11, 12, 14],
+    id: "reading-speed",
+    label: "譜読み・速い所で崩れる",
+    detail: "速い音符、リズム、暗譜、初見",
+    keywords: ["速い", "音符", "リズム", "裏拍", "譜", "暗譜", "初見", "休符", "迷子", "左右", "16分", "変拍子", "臨時記号", "先が読めない", "読めない"],
+    chapterHints: [7, 9],
   },
   {
-    id: "gear",
-    label: "合奏や道具で迷っている",
-    detail: "アンサンブル、楽器、弓、調弦、環境",
-    chapters: [15, 16],
+    id: "expression",
+    label: "表現・曲作りで迷う",
+    detail: "感情、強弱、ルバート、解釈",
+    keywords: ["感情", "表現", "正確", "退屈", "ロボット", "間", "クレッシェンド", "piano", "ルバート", "暖かい音", "解釈", "音量"],
+    chapterHints: [10],
+  },
+  {
+    id: "practice-stage",
+    label: "練習・本番・心がしんどい",
+    detail: "続かない、緊張、比較、本番、録音",
+    keywords: ["練習しない", "練習できない", "練習が", "本番", "スマホ", "上達", "辞め", "比べ", "下手", "心", "集中", "怖", "レッスン", "録音", "客席", "緊張", "辛く", "苛立"],
+    chapterHints: [11, 12],
+  },
+  {
+    id: "teacher-gear",
+    label: "先生・道具・環境で迷う",
+    detail: "先生、独学、楽器、弦、ペグ、チューナー",
+    keywords: ["先生", "youtube", "独学", "弦高", "ペグ", "チューナー", "ミュート", "レンタル", "体格", "ヴィオラ", "連絡", "指導", "ネット", "才能", "楽譜が見え", "楽器と体格"],
+    chapterHints: [14, 15, 16],
   },
 ];
 
 const SPEAKER_ORDER = ["バイオリニスト", "研究マニア", "身体専門家"];
+const ANSWER_BLOCK_LENGTH = 170;
 const HARD_WORDS = [
   ["骨盤前傾", "骨盤が前に傾き、腰が反りやすい状態"],
   ["反り腰", "腰の後ろ側が強く反っている状態"],
@@ -211,7 +232,7 @@ function getFilteredQuestions() {
   const query = normalize(state.search);
   return DATA.questions.filter((q) => {
     const group = PROBLEM_GROUPS.find((item) => item.id === state.chapter);
-    const chapterMatch = state.chapter === "all" || group?.chapters.includes(q.chapter);
+    const chapterMatch = state.chapter === "all" || (group && groupMatchesQuestion(group, q));
     const tierMatch = state.tier === "all" || q.tier === Number(state.tier);
     if (!chapterMatch || !tierMatch) return false;
     if (!query) return true;
@@ -276,7 +297,7 @@ function chooseProblem(group) {
 }
 
 function showQuestionChoices(group, page) {
-  const questions = DATA.questions.filter((q) => group.chapters.includes(q.chapter));
+  const questions = questionsForGroup(group);
   const pageSize = 8;
   const start = page * pageSize;
   const slice = questions.slice(start, start + pageSize);
@@ -378,14 +399,70 @@ async function showSpeakerAnswer(question, speaker, context = {}) {
   }
 
   state.lastAnswer = { question, speaker, turns, context };
-  addMessage("相談室", `${speaker}の返事を送ります。読みやすいように少しずつ出します。`, { kind: "system" });
-  const messages = [];
-  turns.forEach((turn) => {
-    splitText(turn.text, 72).forEach((part, index) => {
-      messages.push({ speaker: turn.speaker, text: part, options: { showName: index === 0 } });
-    });
-  });
-  await sendPacedMessages(messages);
+  addMessage("相談室", `${speaker}に聞いてみます。まずここからです。`, { kind: "system" });
+  showAnswerBlock(question, speaker, turns, buildAnswerSegments(turns), 0, context);
+}
+
+async function showAnswerBlock(question, speaker, turns, segments, index, context = {}) {
+  if (state.sending) return;
+  const segment = segments[index];
+  if (!segment) {
+    finishSpeakerAnswer(question, speaker, turns, context);
+    return;
+  }
+  await sendPacedMessages([segment]);
+  showBlockCheckpoint(question, speaker, turns, segments, index, context);
+}
+
+function showBlockCheckpoint(question, speaker, turns, segments, index, context = {}) {
+  const isLast = index >= segments.length - 1;
+  addChoiceMessage("相談室", isLast ? "この返事はここまでです。どうしますか？" : "ここまでどうですか？", [
+    {
+      label: "なるほど",
+      detail: isLast ? "次の選択肢へ" : "続きを読む",
+      action: () => {
+        if (isLast) {
+          finishSpeakerAnswer(question, speaker, turns, context);
+          return;
+        }
+        showAnswerBlock(question, speaker, turns, segments, index + 1, context);
+      },
+    },
+    {
+      label: "わからない",
+      detail: "この部分だけかみ砕く",
+      action: () => showBlockClarification(question, speaker, turns, segments, index, context),
+    },
+  ], { compact: true });
+}
+
+async function showBlockClarification(question, speaker, turns, segments, index, context = {}) {
+  if (state.sending) return;
+  addUserMessage("わからない");
+  const segment = segments[index];
+  await sendPacedMessages(segmentClarificationMessages(segment.text));
+  const isLast = index >= segments.length - 1;
+  addChoiceMessage("相談室", "続けますか？", [
+    {
+      label: "なるほど",
+      detail: isLast ? "次の選択肢へ" : "続きへ",
+      action: () => {
+        if (isLast) {
+          finishSpeakerAnswer(question, speaker, turns, context);
+          return;
+        }
+        showAnswerBlock(question, speaker, turns, segments, index + 1, context);
+      },
+    },
+    {
+      label: "他の質問をする",
+      detail: "悩みはどれ？に戻る",
+      action: () => startConversation(),
+    },
+  ], { compact: true });
+}
+
+function finishSpeakerAnswer(question, speaker, turns, context = {}) {
   maybeShowScoreAsset(question);
   showAfterSpeakerChoices(question, speaker, turns, context);
 }
@@ -508,19 +585,7 @@ async function showClarification(question, speaker, turns) {
     });
   }
 
-  messages.push({
-    speaker: "相談室",
-    text: "細かい条件も落とさず、1文ずつほどきます。",
-    options: { kind: "system" },
-  });
-
-  splitForClarification(text).forEach((sentence, index) => {
-    messages.push({
-      speaker: "相談室",
-      text: `${index + 1}. ${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`,
-      options: { kind: "system" },
-    });
-  });
+  messages.push(...fullClarificationMessages(text));
 
   await sendPacedMessages(messages);
   addChoiceMessage("相談室", "これでどうですか？", [
@@ -576,15 +641,15 @@ function addMessage(speaker, text, options = {}) {
   return row;
 }
 
-function addChoiceMessage(speaker, text, choices) {
+function addChoiceMessage(speaker, text, choices, options = {}) {
   const row = addMessage(speaker, text, { kind: "system" });
   const stack = row.querySelector(".message-stack");
   const grid = document.createElement("div");
-  grid.className = "choice-grid";
+  grid.className = `choice-grid${options.compact ? " compact" : ""}`;
   choices.forEach((choice) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "choice-button";
+    button.className = `choice-button${options.compact ? " compact" : ""}`;
     button.innerHTML = `<strong>${escapeHtml(choice.label)}</strong>${choice.detail ? `<small>${escapeHtml(choice.detail)}</small>` : ""}`;
     button.addEventListener("click", () => {
       grid.querySelectorAll("button").forEach((item) => item.disabled = true);
@@ -679,6 +744,62 @@ function nextSpeakerAfter(speaker) {
 
 function answerTurns(question, speaker) {
   return question.discussion.filter((turn) => turn.speaker === speaker);
+}
+
+function buildAnswerSegments(turns) {
+  const segments = [];
+  turns.forEach((turn) => {
+    splitText(turn.text, ANSWER_BLOCK_LENGTH).forEach((part, index) => {
+      segments.push({
+        speaker: turn.speaker,
+        text: part,
+        options: { showName: index === 0 },
+      });
+    });
+  });
+  return segments;
+}
+
+function segmentClarificationMessages(text) {
+  const glossary = glossaryFor(text);
+  const lines = splitForClarification(text).map((sentence) => `${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`);
+  const messages = [
+    {
+      speaker: "相談室",
+      text: `この部分の言いたいことはこれです。\n${coreSentence(text)}`,
+      options: { kind: "system" },
+    },
+  ];
+  if (glossary.length) {
+    messages.push({
+      speaker: "相談室",
+      text: `言葉の足場です。\n${glossary.map(([term, plain]) => `${term}: ${plain}`).join("\n")}`,
+      options: { kind: "system" },
+    });
+  }
+  if (lines.length) {
+    messages.push({
+      speaker: "相談室",
+      text: `順番にほどくと、こうです。\n${lines.join("\n")}`,
+      options: { kind: "system" },
+    });
+  }
+  return messages;
+}
+
+function fullClarificationMessages(text) {
+  const lines = splitForClarification(text).map((sentence, index) => (
+    `${index + 1}. ${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`
+  ));
+  const messages = [];
+  for (let i = 0; i < lines.length; i += 4) {
+    messages.push({
+      speaker: "相談室",
+      text: `${i === 0 ? "細かい条件も落とさず、まとまりごとにほどきます。" : "続きです。"}\n${lines.slice(i, i + 4).join("\n")}`,
+      options: { kind: "system" },
+    });
+  }
+  return messages;
 }
 
 function glossaryFor(text) {
@@ -807,8 +928,30 @@ function splitText(text, maxLength) {
   return compact;
 }
 
+function questionsForGroup(group) {
+  return DATA.questions.filter((question) => groupMatchesQuestion(group, question));
+}
+
+function groupMatchesQuestion(group, question) {
+  return keywordMatchesGroup(group, question) || group.chapterHints.includes(question.chapter);
+}
+
+function keywordMatchesGroup(group, question) {
+  const haystack = groupMatchText(question);
+  return group.keywords.some((keyword) => haystack.includes(normalize(keyword)));
+}
+
+function groupMatchText(question) {
+  return normalize([
+    question.title,
+    makeChoiceTitle(question),
+  ].join(" "));
+}
+
 function groupForQuestion(question) {
-  return PROBLEM_GROUPS.find((group) => group.chapters.includes(question.chapter)) || PROBLEM_GROUPS[0];
+  return PROBLEM_GROUPS.find((group) => keywordMatchesGroup(group, question))
+    || PROBLEM_GROUPS.find((group) => group.chapterHints.includes(question.chapter))
+    || PROBLEM_GROUPS[0];
 }
 
 function groupLabelForQuestion(question) {

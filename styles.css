@@ -433,6 +433,11 @@ h1 {
   margin-top: 8px;
 }
 
+.choice-grid.compact {
+  display: flex;
+  gap: 7px;
+}
+
 .choice-button {
   display: block;
   width: 100%;
@@ -444,6 +449,13 @@ h1 {
   border-radius: var(--radius);
   box-shadow: 0 2px 0 rgba(30, 48, 33, .04);
   cursor: pointer;
+}
+
+.choice-button.compact {
+  flex: 1 1 0;
+  min-height: 42px;
+  padding: 8px 9px;
+  text-align: center;
 }
 
 .choice-button strong,
