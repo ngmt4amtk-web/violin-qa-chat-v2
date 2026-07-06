@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="650" height="320" viewBox="0 0 650 320" font-family="Hiragino Kaku Gothic ProN, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#8a6d3b"/>
+    </marker>
+  </defs>
+
+  <!-- 上部注記 -->
+  <text x="325" y="26" font-size="13.5" fill="#1a1a1a" text-anchor="middle">
+    <tspan font-weight="bold" fill="#8a6d3b">半音上がるごとに約5.6%縮む</tspan>
+    <tspan> ／ 1オクターブで半分</tspan>
+  </text>
+
+  <!-- 指板本体（横向き・左がナット） -->
+  <rect x="40" y="60" width="30" height="46" fill="#1a1a1a"/>
+  <text x="55" y="53" font-size="12" fill="#1a1a1a" text-anchor="middle">ナット</text>
+  <rect x="70" y="60" width="530" height="46" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+
+  <!-- 弦長の中点（＝第7ポジションと同一地点） -->
+  <line x1="600" y1="52" x2="600" y2="114" stroke="#34506e" stroke-width="1.2" stroke-dasharray="3,3"/>
+  <text x="600" y="42" font-size="12" fill="#34506e" text-anchor="middle">弦長の中点</text>
+
+  <!-- ポジション目盛（縮小する間隔） -->
+  <!-- 開放弦のすぐ隣 -->
+  <line x1="90" y1="60" x2="90" y2="106" stroke="#1a1a1a" stroke-width="1.3"/>
+  <text x="90" y="122" font-size="12.5" font-weight="bold" fill="#1a1a1a" text-anchor="middle">開放弦のすぐ隣</text>
+
+  <!-- 第1ポジション -->
+  <line x1="190" y1="60" x2="190" y2="106" stroke="#1a1a1a" stroke-width="1.3"/>
+  <text x="190" y="122" font-size="12.5" font-weight="bold" fill="#1a1a1a" text-anchor="middle">第1</text>
+
+  <!-- 第3ポジション -->
+  <line x1="305" y1="60" x2="305" y2="106" stroke="#1a1a1a" stroke-width="1.3"/>
+  <text x="305" y="122" font-size="12.5" font-weight="bold" fill="#1a1a1a" text-anchor="middle">第3</text>
+
+  <!-- 第5ポジション -->
+  <line x1="425" y1="60" x2="425" y2="106" stroke="#1a1a1a" stroke-width="1.3"/>
+  <text x="425" y="122" font-size="12.5" font-weight="bold" fill="#1a1a1a" text-anchor="middle">第5</text>
+
+  <!-- 第7ポジション（＝弦長の中点。目盛線は上の中点破線と共用） -->
+  <text x="600" y="122" font-size="12.5" font-weight="bold" fill="#1a1a1a" text-anchor="middle">第7</text>
+
+  <!-- 半音幅ブラケット（下向き・縮小していく） -->
+  <!-- 開放弦のすぐ隣：18mm -->
+  <path d="M 78,150 L 78,158 L 102,158 L 102,150" fill="none" stroke="#8a6d3b" stroke-width="1.3"/>
+  <text x="90" y="176" font-size="13" fill="#1a1a1a" text-anchor="middle">18mm</text>
+
+  <!-- 第1：16mm -->
+  <path d="M 180,150 L 180,158 L 200,158 L 200,150" fill="none" stroke="#8a6d3b" stroke-width="1.3"/>
+  <text x="190" y="176" font-size="13" fill="#1a1a1a" text-anchor="middle">16mm</text>
+
+  <!-- 第3：14mm -->
+  <path d="M 296,150 L 296,158 L 314,158 L 314,150" fill="none" stroke="#8a6d3b" stroke-width="1.3"/>
+  <text x="305" y="176" font-size="13" fill="#1a1a1a" text-anchor="middle">14mm</text>
+
+  <!-- 第5：12mm -->
+  <path d="M 417,150 L 417,158 L 433,158 L 433,150" fill="none" stroke="#8a6d3b" stroke-width="1.3"/>
+  <text x="425" y="176" font-size="13" fill="#1a1a1a" text-anchor="middle">12mm</text>
+
+  <!-- 第7（＝中点）：9mm -->
+  <path d="M 594,150 L 594,158 L 606,158 L 606,150" fill="none" stroke="#8a6d3b" stroke-width="1.3"/>
+  <text x="600" y="176" font-size="13" fill="#1a1a1a" text-anchor="middle">9mm</text>
+
+  <!-- 縮小の連結線（案内） -->
+  <path d="M 90,180 Q 345,214 600,180" fill="none" stroke="#5a5a5a" stroke-width="0.8" stroke-dasharray="2,3"/>
+  <text x="325" y="222" font-size="12" fill="#5a5a5a" text-anchor="middle">半音1つぶんの実寸幅（各ポジション）</text>
+
+  <text x="325" y="260" font-size="12" fill="#1a1a1a" text-anchor="middle">同じ「半音1個ぶん指を動かす」でも、高いポジションほど動く距離は小さい</text>
+</svg>

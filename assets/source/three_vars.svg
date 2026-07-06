@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="650" height="360" viewBox="0 0 650 360" font-family="Hiragino Kaku Gothic ProN, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#8a6d3b"/>
+    </marker>
+    <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+    <clipPath id="pressureTrack">
+      <rect x="95" y="158" width="300" height="14" rx="7"/>
+    </clipPath>
+  </defs>
+
+  <!-- 弓速 -->
+  <text x="30" y="80" font-size="15" font-weight="bold" fill="#1a1a1a">弓速</text>
+  <text x="95" y="56" font-size="13" fill="#1a1a1a">遅い</text>
+  <text x="395" y="56" font-size="13" fill="#1a1a1a" text-anchor="end">速い</text>
+  <rect x="95" y="68" width="300" height="14" rx="7" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <circle cx="245" cy="75" r="10" fill="#8a6d3b"/>
+
+  <!-- 弓圧（崖つき） -->
+  <text x="30" y="170" font-size="15" font-weight="bold" fill="#1a1a1a">弓圧</text>
+  <text x="95" y="146" font-size="13" fill="#1a1a1a">軽い</text>
+  <text x="245" y="146" font-size="13" fill="#1a1a1a" text-anchor="middle">共鳴の帯</text>
+  <text x="395" y="146" font-size="13" fill="#1a1a1a" text-anchor="end">重い</text>
+  <rect x="95" y="158" width="300" height="14" rx="7" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <g clip-path="url(#pressureTrack)">
+    <rect x="95" y="158" width="35" height="14" fill="url(#hatch)"/>
+    <rect x="360" y="158" width="35" height="14" fill="url(#hatch)"/>
+  </g>
+  <line x1="130" y1="150" x2="130" y2="180" stroke="#1a1a1a" stroke-width="2.5"/>
+  <line x1="360" y1="150" x2="360" y2="180" stroke="#1a1a1a" stroke-width="2.5"/>
+  <text x="130" y="200" font-size="13" font-weight="bold" fill="#8a6d3b" text-anchor="middle">下の崖（下限）</text>
+  <text x="360" y="200" font-size="13" font-weight="bold" fill="#8a6d3b" text-anchor="middle">上の崖（上限）</text>
+  <circle cx="245" cy="165" r="10" fill="#8a6d3b"/>
+
+  <!-- 接触点 -->
+  <text x="30" y="260" font-size="15" font-weight="bold" fill="#1a1a1a">接触点</text>
+  <text x="95" y="236" font-size="13" fill="#1a1a1a">指板寄り</text>
+  <text x="395" y="236" font-size="13" fill="#1a1a1a" text-anchor="end">駒寄り</text>
+  <rect x="95" y="248" width="300" height="14" rx="7" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <circle cx="245" cy="255" r="10" fill="#8a6d3b"/>
+
+  <!-- 対応の矢印と式 -->
+  <path d="M 400 75 C 415 75, 420 98, 426 108" fill="none" stroke="#8a6d3b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 400 255 C 420 230, 420 150, 426 122" fill="none" stroke="#8a6d3b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="430" y="120" font-size="14"><tspan font-weight="bold" fill="#8a6d3b">音量</tspan><tspan fill="#1a1a1a"> = 弓速 ÷ 駒からの距離</tspan></text>
+  <path d="M 400 165 C 415 165, 418 190, 426 198" fill="none" stroke="#8a6d3b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="430" y="210" font-size="14"><tspan font-weight="bold" fill="#8a6d3b">明るさ</tspan><tspan fill="#1a1a1a"> = 主に弓圧</tspan></text>
+
+  <!-- 補助のつまみ -->
+  <text x="530" y="278" font-size="13" fill="#1a1a1a" text-anchor="middle">補助のつまみ</text>
+  <circle cx="530" cy="305" r="15" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1.5"/>
+  <line x1="530" y1="305" x2="540" y2="294" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+  <text x="530" y="341" font-size="13" fill="#1a1a1a" text-anchor="middle">傾き（毛の量）</text>
+</svg>

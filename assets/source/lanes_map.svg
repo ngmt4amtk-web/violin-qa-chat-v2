@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="650" height="400" viewBox="0 0 650 400" font-family="Hiragino Kaku Gothic ProN, sans-serif">
+  <!-- 5本のレーン帯（上=指板の端／下=駒。駒に近いほど濃く） -->
+  <rect x="90" y="74" width="270" height="50" fill="#f9f5ea"/>
+  <rect x="90" y="124" width="270" height="50" fill="#f2ebd7"/>
+  <rect x="90" y="174" width="270" height="50" fill="#ebe1c5"/>
+  <rect x="90" y="224" width="270" height="50" fill="#e4d6b2"/>
+  <rect x="90" y="274" width="270" height="50" fill="#dccaa0"/>
+  <line x1="90" y1="124" x2="360" y2="124" stroke="#8a6d3b" stroke-width="1"/>
+  <line x1="90" y1="174" x2="360" y2="174" stroke="#8a6d3b" stroke-width="1"/>
+  <line x1="90" y1="224" x2="360" y2="224" stroke="#8a6d3b" stroke-width="1"/>
+  <line x1="90" y1="274" x2="360" y2="274" stroke="#8a6d3b" stroke-width="1"/>
+  <!-- レーン3の強調枠（標準・迷ったらここ） -->
+  <rect x="91" y="175" width="268" height="48" fill="none" stroke="#8a6d3b" stroke-width="2"/>
+  <!-- 弦（縦線4本） -->
+  <line x1="135" y1="30" x2="135" y2="364" stroke="#1a1a1a" stroke-width="1.5"/>
+  <line x1="195" y1="30" x2="195" y2="364" stroke="#1a1a1a" stroke-width="1.5"/>
+  <line x1="255" y1="30" x2="255" y2="364" stroke="#1a1a1a" stroke-width="1.5"/>
+  <line x1="315" y1="30" x2="315" y2="364" stroke="#1a1a1a" stroke-width="1.5"/>
+  <!-- 指板と駒 -->
+  <rect x="90" y="42" width="270" height="32" rx="4" fill="#1a1a1a"/>
+  <text x="225" y="63" font-size="15" font-weight="bold" fill="#f6f1e3" text-anchor="middle">指板</text>
+  <rect x="90" y="324" width="270" height="28" rx="4" fill="#1a1a1a"/>
+  <text x="225" y="343" font-size="15" font-weight="bold" fill="#f6f1e3" text-anchor="middle">駒</text>
+  <!-- 指板の端（レーン5の始まり） -->
+  <text x="80" y="79" font-size="13" fill="#1a1a1a" text-anchor="end">指板の端</text>
+  <line x1="82" y1="74" x2="90" y2="74" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- 弦ラベル -->
+  <text x="225" y="384" font-size="13" fill="#1a1a1a" text-anchor="middle">弦</text>
+  <!-- レーン名と性格 -->
+  <line x1="362" y1="99" x2="374" y2="99" stroke="#8a6d3b" stroke-width="1.5"/>
+  <text x="380" y="104" font-size="15"><tspan font-weight="bold" fill="#8a6d3b">レーン5</tspan><tspan dx="10" fill="#1a1a1a">安全地帯</tspan></text>
+  <line x1="362" y1="149" x2="374" y2="149" stroke="#8a6d3b" stroke-width="1.5"/>
+  <text x="380" y="154" font-size="15"><tspan font-weight="bold" fill="#8a6d3b">レーン4</tspan><tspan dx="10" fill="#1a1a1a">柔らかい・速い弓向き</tspan></text>
+  <line x1="362" y1="199" x2="374" y2="199" stroke="#8a6d3b" stroke-width="1.5"/>
+  <text x="380" y="204" font-size="15"><tspan font-weight="bold" fill="#8a6d3b">レーン3</tspan><tspan dx="10" fill="#1a1a1a">標準・迷ったらここ</tspan></text>
+  <line x1="362" y1="249" x2="374" y2="249" stroke="#8a6d3b" stroke-width="1.5"/>
+  <text x="380" y="254" font-size="15"><tspan font-weight="bold" fill="#8a6d3b">レーン2</tspan><tspan dx="10" fill="#1a1a1a">濃く凝縮・遅い弓向き</tspan></text>
+  <line x1="362" y1="299" x2="374" y2="299" stroke="#8a6d3b" stroke-width="1.5"/>
+  <text x="380" y="304" font-size="15"><tspan font-weight="bold" fill="#8a6d3b">レーン1</tspan><tspan dx="10" fill="#1a1a1a">上級者ゾーン</tspan></text>
+</svg>

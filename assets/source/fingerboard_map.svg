@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="650" height="350" viewBox="0 0 650 350" font-family="Hiragino Kaku Gothic ProN, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#8a6d3b"/>
+    </marker>
+  </defs>
+
+  <!-- ナット -->
+  <rect x="143" y="50" width="64" height="10" rx="2" fill="#1a1a1a"/>
+  <text x="215" y="59" font-size="13" fill="#1a1a1a">ナット</text>
+
+  <!-- 指板本体（縦向き・A線・ナットが上） -->
+  <rect x="150" y="60" width="50" height="255" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="175" y="333" font-size="12" fill="#1a1a1a" text-anchor="middle">A線</text>
+
+  <!-- 半音ブラケット：1指(35mm)→仮想ド(55mm)　※ラベルは上側に -->
+  <line x1="133" y1="130" x2="133" y2="170" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="127" y1="130" x2="133" y2="130" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="127" y1="170" x2="133" y2="170" stroke="#1a1a1a" stroke-width="1.2"/>
+  <text x="121" y="112" font-size="13" font-weight="bold" fill="#8a6d3b" text-anchor="end">半音</text>
+  <text x="121" y="127" font-size="12" fill="#1a1a1a" text-anchor="end">≒16〜18mm</text>
+
+  <!-- 全音ブラケット：1指(35mm)→2指(66mm)　※ラベルは下側に -->
+  <line x1="100" y1="130" x2="100" y2="192" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="94" y1="130" x2="100" y2="130" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="94" y1="192" x2="100" y2="192" stroke="#1a1a1a" stroke-width="1.2"/>
+  <text x="88" y="207" font-size="13" font-weight="bold" fill="#8a6d3b" text-anchor="end">全音</text>
+  <text x="88" y="222" font-size="12" fill="#1a1a1a" text-anchor="end">≒33〜36mm</text>
+
+  <!-- 指の点（実寸位置） -->
+  <circle cx="175" cy="130" r="9" fill="#8a6d3b"/>
+  <text x="175" y="134" font-size="11" font-weight="bold" fill="#f6f1e3" text-anchor="middle">1</text>
+
+  <circle cx="175" cy="170" r="5" fill="none" stroke="#1a1a1a" stroke-width="1.2" stroke-dasharray="2,2"/>
+
+  <circle cx="175" cy="192" r="9" fill="#8a6d3b"/>
+  <text x="175" y="196" font-size="11" font-weight="bold" fill="#f6f1e3" text-anchor="middle">2</text>
+
+  <circle cx="175" cy="220" r="9" fill="#8a6d3b"/>
+  <text x="175" y="224" font-size="11" font-weight="bold" fill="#f6f1e3" text-anchor="middle">3</text>
+
+  <circle cx="175" cy="272" r="9" fill="#8a6d3b"/>
+  <text x="175" y="276" font-size="11" font-weight="bold" fill="#f6f1e3" text-anchor="middle">4</text>
+
+  <!-- 仮想のド（参考点）のミニラベル -->
+  <text x="163" y="173" font-size="10" fill="#5a5a5a" text-anchor="end">(ド)</text>
+
+  <!-- 等間隔ラベル行への引き出し線 -->
+  <line x1="184" y1="130" x2="228" y2="130" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="184" y1="192" x2="200" y2="192" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="200" y1="192" x2="200" y2="177" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="200" y1="177" x2="228" y2="177" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="184" y1="220" x2="205" y2="220" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="205" y1="220" x2="205" y2="225" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="205" y1="225" x2="228" y2="225" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="184" y1="272" x2="228" y2="272" stroke="#1a1a1a" stroke-width="0.8"/>
+
+  <!-- 等間隔ラベル：1指 シ -->
+  <text x="232" y="128" font-size="14" font-weight="bold" fill="#1a1a1a">1指 シ</text>
+  <text x="232" y="144" font-size="12" fill="#5a5a5a">ナットから35mm</text>
+
+  <!-- 2指 ド♯ -->
+  <text x="232" y="175" font-size="14" font-weight="bold" fill="#1a1a1a">2指 ド♯</text>
+  <text x="232" y="191" font-size="12" fill="#5a5a5a">ナットから66mm</text>
+
+  <!-- 3指 レ -->
+  <text x="232" y="223" font-size="14" font-weight="bold" fill="#1a1a1a">3指 レ</text>
+  <text x="232" y="239" font-size="12" fill="#5a5a5a">ナットから80mm</text>
+
+  <!-- 4指 ミ -->
+  <text x="232" y="270" font-size="14" font-weight="bold" fill="#1a1a1a">4指 ミ</text>
+  <text x="232" y="286" font-size="12" fill="#5a5a5a">ナットから106mm</text>
+
+  <!-- ズームの案内線（点線）→ 拡大枠へ -->
+  <line x1="200" y1="192" x2="352" y2="96" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="200" y1="192" x2="352" y2="238" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="3,3"/>
+
+  <!-- 拡大枠 -->
+  <rect x="352" y="88" width="258" height="158" rx="6" fill="#ffffff" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- 指先イラスト（正面から見た指と爪） -->
+  <rect x="428" y="120" width="66" height="130" rx="30" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- 爪の白い部分（先端） -->
+  <rect x="440" y="128" width="42" height="26" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="435" y1="141" x2="487" y2="141" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="2,2"/>
+  <!-- 爪の根元側 -->
+  <rect x="440" y="154" width="42" height="30" rx="8" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+
+  <!-- 白い部分のブラケット -->
+  <line x1="495" y1="128" x2="500" y2="128" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="495" y1="154" x2="500" y2="154" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="500" y1="128" x2="500" y2="154" stroke="#1a1a1a" stroke-width="1.2"/>
+  <line x1="497" y1="141" x2="503" y2="141" stroke="#8a6d3b" stroke-width="1.2"/>
+  <text x="512" y="145" font-size="12" fill="#1a1a1a">半分</text>
+
+  <text x="380" y="106" font-size="13" fill="#1a1a1a">爪の白い部分</text>
+  <text x="362" y="222" font-size="13" font-weight="bold" fill="#8a6d3b">10セント</text>
+  <text x="362" y="238" font-size="13" font-weight="bold" fill="#8a6d3b">≒ 2mm弱</text>
+  <text x="481" y="270" font-size="12" fill="#5a5a5a" text-anchor="middle">（爪の白い部分の幅ほど）</text>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="650" height="300" viewBox="0 0 650 300" font-family="Hiragino Kaku Gothic ProN, sans-serif">
+  <defs>
+    <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+    <clipPath id="gaugeTrack">
+      <rect x="60" y="140" width="530" height="16" rx="8"/>
+    </clipPath>
+  </defs>
+
+  <!-- ゲージ本体（0〜10、左＝0） -->
+  <rect x="60" y="140" width="530" height="16" rx="8" fill="#f6f1e3" stroke="#1a1a1a" stroke-width="1"/>
+  <g clip-path="url(#gaugeTrack)">
+    <rect x="166" y="140" width="106" height="16" fill="url(#hatch)"/>
+    <rect x="484" y="140" width="106" height="16" fill="url(#hatch)"/>
+  </g>
+
+  <!-- 常用帯（MVPのすぐ右・生成りを縁取りで強調） -->
+  <rect x="333" y="140" width="80" height="16" fill="#f6f1e3" stroke="#8a6d3b" stroke-width="1.5"/>
+
+  <!-- ハーモニクス圧の点（1あたり） -->
+  <circle cx="113" cy="148" r="4" fill="none" stroke="#1a1a1a" stroke-width="1.3"/>
+
+  <!-- MVPの点（5あたり・目立つ茶色） -->
+  <circle cx="325" cy="148" r="8" fill="#8a6d3b"/>
+
+  <!-- 上部ラベル：上の崖→三重毒（8〜10・斜線ハッチ） -->
+  <line x1="537" y1="58" x2="537" y2="140" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2,3"/>
+  <text x="537" y="38" font-size="13" font-weight="bold" fill="#1a1a1a" text-anchor="middle">上の崖→三重毒</text>
+  <text x="537" y="54" font-size="10" fill="#5a5a5a" text-anchor="middle">（音程が上ずる・移動が死ぬ・手が固まる）</text>
+
+  <!-- 上部ラベル：ハーモニクス圧／MVP -->
+  <line x1="113" y1="94" x2="113" y2="140" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2,3"/>
+  <text x="113" y="88" font-size="11" fill="#1a1a1a" text-anchor="middle">ハーモニクス圧（フラジオレットの音だけ）</text>
+
+  <line x1="325" y1="94" x2="325" y2="140" stroke="#8a6d3b" stroke-width="0.8" stroke-dasharray="2,3"/>
+  <text x="325" y="88" font-size="11" font-weight="bold" fill="#8a6d3b" text-anchor="middle">MVP＝音が純粋になる最小圧</text>
+
+  <!-- 近接ラベル：ノイズ帯（2〜4） -->
+  <text x="219" y="130" font-size="12" font-weight="bold" fill="#1a1a1a" text-anchor="middle">ノイズ帯</text>
+
+  <!-- 下部ラベル：0／常用帯 -->
+  <text x="48" y="176" font-size="12" fill="#1a1a1a">0 触れていない</text>
+  <text x="373" y="176" font-size="12" font-weight="bold" fill="#8a6d3b" text-anchor="middle">常用帯</text>
+
+  <!-- 第2軸：フィッシャーのLevel（逆向き） -->
+  <text x="325" y="196" font-size="11" fill="#34506e" text-anchor="middle">フィッシャーのLevel</text>
+
+  <path d="M 55,210 L 63,205 L 63,215 Z" fill="#34506e"/>
+  <path d="M 595,210 L 587,205 L 587,215 Z" fill="#34506e"/>
+  <line x1="63" y1="210" x2="587" y2="210" stroke="#34506e" stroke-width="1.3"/>
+
+  <line x1="60" y1="206" x2="60" y2="214" stroke="#34506e" stroke-width="1.3"/>
+  <line x1="192.5" y1="206" x2="192.5" y2="214" stroke="#34506e" stroke-width="1.3"/>
+  <line x1="325" y1="206" x2="325" y2="214" stroke="#34506e" stroke-width="1.3"/>
+  <line x1="457.5" y1="206" x2="457.5" y2="214" stroke="#34506e" stroke-width="1.3"/>
+  <line x1="590" y1="206" x2="590" y2="214" stroke="#34506e" stroke-width="1.3"/>
+
+  <text x="60" y="230" font-size="13" font-weight="bold" fill="#34506e" text-anchor="middle">5</text>
+  <text x="192.5" y="230" font-size="13" font-weight="bold" fill="#34506e" text-anchor="middle">4</text>
+  <text x="325" y="230" font-size="13" font-weight="bold" fill="#34506e" text-anchor="middle">3</text>
+  <text x="457.5" y="230" font-size="13" font-weight="bold" fill="#34506e" text-anchor="middle">2</text>
+  <text x="590" y="230" font-size="13" font-weight="bold" fill="#34506e" text-anchor="middle">1</text>
+
+  <text x="60" y="244" font-size="9" fill="#5a5a5a" text-anchor="middle">無圧</text>
+  <text x="590" y="244" font-size="9" fill="#5a5a5a" text-anchor="middle">指板まで押し切る</text>
+
+  <text x="325" y="266" font-size="10" fill="#5a5a5a" text-anchor="middle">（常用目標はLevel2〜3）</text>
+</svg>

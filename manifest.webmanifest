@@ -1,0 +1,15 @@
+{
+  "name": "バイオリンQ&Aトーク",
+  "short_name": "ViolinQA",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#e7f0de",
+  "theme_color": "#0aa45d",
+  "icons": [
+    {
+      "src": "assets/avatars/violinist.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
