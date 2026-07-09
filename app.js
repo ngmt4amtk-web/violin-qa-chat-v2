@@ -3,7 +3,7 @@ const DATA = window.VIOLIN_QA_DATA;
 const SPEAKERS = {
   "相談室": {
     key: "system",
-    avatar: "assets/avatars/violinist.png",
+    avatar: "assets/avatars/room.svg",
   },
   "バイオリニスト": {
     key: "violinist",
@@ -78,7 +78,6 @@ const PROBLEM_GROUPS = [
   },
 ];
 
-const SPEAKER_ORDER = ["バイオリニスト", "研究マニア", "身体専門家"];
 const ANSWER_BLOCK_LENGTH = 170;
 const HARD_WORDS = [
   ["骨盤前傾", "骨盤が前に傾き、腰が反りやすい状態"],
@@ -98,21 +97,9 @@ const HARD_WORDS = [
   ["弓圧", "弓が弦にかかる重さ"],
   ["弓速", "弓を動かす速さ"],
   ["接触点", "弓が弦に触れている場所"],
-];
-
-const PLAIN_REWRITES = [
-  [/フォームアップ/gu, "準備運動"],
-  [/意識で監視する/gu, "意識して見張る"],
-  [/監視する/gu, "見張る"],
-  [/監視/gu, "見張ること"],
-  [/可動域/gu, "動かせる範囲"],
-  [/組み込む/gu, "入れる"],
-  [/長続き/gu, "続けやすく"],
-  [/無理なく/gu, "体に負担をかけず"],
-  [/真っ直ぐ/gu, "まっすぐ"],
-  [/連動/gu, "つながり"],
-  [/習得/gu, "身につけること"],
-  [/改善/gu, "良くすること"],
+  ["可動域", "関節を無理なく動かせる範囲"],
+  ["回内", "前腕を、手のひらが下を向く方向へひねる動き"],
+  ["回外", "前腕を、手のひらが上を向く方向へひねる動き"],
 ];
 
 const els = {
@@ -128,45 +115,52 @@ const els = {
   drawerBackdrop: document.getElementById("drawerBackdrop"),
 };
 
+function safeStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* プライベートモード等では保存しない */
+  }
+}
+
 const state = {
   chapter: "all",
   tier: "all",
   search: "",
   activeQuestion: null,
   sending: false,
-  lastAnswer: null,
 };
 
 function init() {
   if (!DATA || !Array.isArray(DATA.questions)) {
-    addMessage("相談室", "データを読み込めませんでした。", { kind: "system" });
+    addMessage("相談室", "データを読み込めませんでした。通信環境を確認して、ページを再読み込みしてください。", { kind: "system" });
     return;
   }
 
   renderChapters();
   bindEvents();
   renderQuestionList();
-  startConversation();
 
   const params = new URLSearchParams(window.location.search);
   const deepLinkId = params.get("q")?.toUpperCase();
-  if (deepLinkId && DATA.questions.some((q) => q.id === deepLinkId)) {
-    openQuestion(DATA.questions.find((q) => q.id === deepLinkId), { fromDeepLink: true });
-    if (params.get("view") === "clarify") {
-      const speakerParam = params.get("speaker");
-      const speaker = SPEAKER_ORDER.includes(speakerParam) ? speakerParam : SPEAKER_ORDER[0];
-      showClarification(state.activeQuestion, speaker, answerTurns(state.activeQuestion, speaker));
-    } else if (params.get("view") === "answer") {
-      const speakerParam = params.get("speaker");
-      if (speakerParam === "all") {
-        startAllSpeakers(state.activeQuestion);
-      } else if (SPEAKER_ORDER.includes(speakerParam)) {
-        showSpeakerAnswer(state.activeQuestion, speakerParam, { mode: "single" });
-      } else {
-        askAnswerTarget(state.activeQuestion);
-      }
+  const deepLinked = deepLinkId && DATA.questions.find((q) => q.id === deepLinkId);
+  if (deepLinked) {
+    openQuestion(deepLinked, { fromDeepLink: true });
+    if (params.get("view") === "answer" || params.get("view") === "clarify") {
+      startDiscussion(deepLinked);
     }
+    return;
   }
+
+  startConversation();
 }
 
 function bindEvents() {
@@ -185,12 +179,24 @@ function bindEvents() {
   });
 
   els.menuButton.addEventListener("click", () => {
-    els.body.classList.add("drawer-open");
+    const open = els.body.classList.toggle("drawer-open");
+    els.menuButton.setAttribute("aria-expanded", String(open));
   });
 
-  els.drawerBackdrop.addEventListener("click", () => {
-    els.body.classList.remove("drawer-open");
+  els.drawerBackdrop.addEventListener("click", closeDrawer);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDrawer();
   });
+
+  window.matchMedia("(min-width: 841px)").addEventListener("change", (event) => {
+    if (event.matches) closeDrawer();
+  });
+}
+
+function closeDrawer() {
+  els.body.classList.remove("drawer-open");
+  els.menuButton.setAttribute("aria-expanded", "false");
 }
 
 function renderChapters() {
@@ -212,11 +218,11 @@ function renderChapters() {
 }
 
 function chooseProblemFilter(groupId) {
-  const group = PROBLEM_GROUPS.find((item) => item.id === groupId);
   state.chapter = groupId;
   document.querySelectorAll(".chapter-tab").forEach((button, index) => {
     button.classList.toggle("active", index > 0 && PROBLEM_GROUPS[index - 1].id === groupId);
   });
+  document.querySelector(".chapter-tab.active")?.scrollIntoView({ inline: "nearest", block: "nearest" });
   renderQuestionList();
 }
 
@@ -231,31 +237,33 @@ function chooseChapterFilter(chapter) {
 function getFilteredQuestions() {
   const query = normalize(state.search);
   return DATA.questions.filter((q) => {
+    // 検索中はタブ・深さの絞り込みを外し、常に全体から探す
+    if (query) {
+      const haystack = normalize([
+        q.id,
+        q.chapter_title,
+        q.app.title,
+        q.app.question,
+        q.app.profile,
+        (q.app.discussion || []).map((turn) => turn.text).join(" "),
+        (q.app.prescription || []).join(" "),
+      ].join(" "));
+      return haystack.includes(query);
+    }
     const group = PROBLEM_GROUPS.find((item) => item.id === state.chapter);
     const chapterMatch = state.chapter === "all" || (group && groupMatchesQuestion(group, q));
     const tierMatch = state.tier === "all" || q.tier === Number(state.tier);
-    if (!chapterMatch || !tierMatch) return false;
-    if (!query) return true;
-
-    const haystack = normalize([
-      q.id,
-      q.title,
-      makeChoiceTitle(q),
-      makeAskText(q),
-      q.discussion.map((turn) => `${turn.speaker} ${turn.text}`).join(" "),
-      q.prescription.join(" "),
-    ].join(" "));
-    return haystack.includes(query);
+    return chapterMatch && tierMatch;
   });
 }
 
 function renderQuestionList() {
   const questions = getFilteredQuestions();
-  els.questionCount.textContent = `${questions.length}件`;
+  els.questionCount.textContent = state.search ? `全体から${questions.length}件` : `${questions.length}件`;
   els.questionList.innerHTML = "";
 
   if (questions.length === 0) {
-    els.questionList.innerHTML = `<div class="empty-state">近い悩みが見つかりません。</div>`;
+    els.questionList.innerHTML = `<div class="empty-state">近い悩みが見つかりません。<br>言葉を短くして探すと見つかりやすいです。</div>`;
     return;
   }
 
@@ -265,11 +273,18 @@ function renderQuestionList() {
     button.type = "button";
     button.className = `question-card ${state.activeQuestion?.id === q.id ? "active" : ""}`;
     button.innerHTML = `
-      <div class="meta"><span>${escapeHtml(groupLabelForQuestion(q))}</span><span>${tierLabel(q.tier)}</span></div>
-      <div class="title">${escapeHtml(makeChoiceTitle(q))}</div>
-      <div class="persona">${escapeHtml(shorten(makeAskText(q), 72))}</div>
+      <div class="meta"><span>${escapeHtml(`${q.id}・${q.chapter_title}`)}</span><span>${tierLabel(q.tier)}</span></div>
+      <div class="title">${escapeHtml(q.app.title)}</div>
+      <div class="persona">${escapeHtml(shorten(q.app.question, 72))}</div>
     `;
-    button.addEventListener("click", () => openQuestion(q));
+    button.addEventListener("click", () => {
+      if (state.sending) return;
+      if (state.activeQuestion?.id === q.id) {
+        closeDrawer();
+        return;
+      }
+      openQuestion(q);
+    });
     frag.append(button);
   });
 
@@ -280,17 +295,31 @@ function startConversation() {
   state.activeQuestion = null;
   els.chatBody.innerHTML = "";
   els.roomTitle.textContent = "バイオリンQ&A相談室";
-  els.roomSub.textContent = "あなたの悩みに近いものを選びます";
-  addMessage("相談室", "悩みはどれ？\n近いものを選んでください。ぴったりじゃなくて大丈夫です。", { kind: "system" });
-  addChoiceMessage("相談室", "まず大きく分けると、どれに近いですか？", PROBLEM_GROUPS.map((group) => ({
+  els.roomSub.textContent = "近い悩みを選んでください";
+  renderQuestionList();
+  addMessage("相談室", "こんにちは。バイオリンの悩みに、3人の専門家が答える相談室です。\nぴったりじゃなくて大丈夫なので、近いものを選んでください。", { kind: "system" });
+
+  const choices = PROBLEM_GROUPS.map((group) => ({
     label: group.label,
     detail: group.detail,
     action: () => chooseProblem(group),
-  })));
+  }));
+
+  const lastId = safeStorageGet("violin-qa-last-id");
+  const lastQuestion = lastId && DATA.questions.find((q) => q.id === lastId);
+  if (lastQuestion) {
+    choices.unshift({
+      label: "前回の相談をもう一度ひらく",
+      detail: shorten(lastQuestion.app.title, 40),
+      silent: true,
+      action: () => openQuestion(lastQuestion),
+    });
+  }
+
+  addChoiceMessage("相談室", "まず大きく分けると、どれに近いですか？", choices);
 }
 
 function chooseProblem(group) {
-  addUserMessage(group.label);
   chooseProblemFilter(group.id);
   addMessage("相談室", "では、もう少し具体的にはどれに近いですか？", { kind: "system" });
   showQuestionChoices(group, 0);
@@ -302,15 +331,16 @@ function showQuestionChoices(group, page) {
   const start = page * pageSize;
   const slice = questions.slice(start, start + pageSize);
   const choices = slice.map((q) => ({
-    label: makeChoiceTitle(q),
-    detail: shorten(makeAskText(q), 54),
+    label: q.app.title,
+    detail: shorten(q.app.question, 54),
+    silent: true,
     action: () => openQuestion(q),
   }));
 
   if (start + pageSize < questions.length) {
     choices.push({
       label: "もっと見る",
-      detail: "この悩みの候補を続けて見る",
+      detail: `この悩みの候補は全部で${questions.length}件`,
       action: () => showQuestionChoices(group, page + 1),
     });
   }
@@ -322,7 +352,7 @@ function showQuestionChoices(group, page) {
     });
   }
   choices.push({
-    label: "最初から選び直す",
+    label: "大分類から選び直す",
     detail: "悩みの大分類に戻る",
     action: () => startConversation(),
   });
@@ -331,23 +361,28 @@ function showQuestionChoices(group, page) {
 }
 
 function openQuestion(question, options = {}) {
+  if (state.sending) return;
+  disableStaleChoices();
   state.activeQuestion = question;
-  localStorage.setItem("violin-qa-last-id", question.id);
-  els.body.classList.remove("drawer-open");
-  chooseProblemFilter(groupForQuestion(question).id);
-  renderQuestionList();
-  els.roomTitle.textContent = makeChoiceTitle(question);
-  els.roomSub.textContent = groupLabelForQuestion(question);
+  safeStorageSet("violin-qa-last-id", question.id);
+  closeDrawer();
+  const currentGroup = PROBLEM_GROUPS.find((group) => group.id === state.chapter);
+  if (state.chapter !== "all" && !(currentGroup && groupMatchesQuestion(currentGroup, question))) {
+    chooseProblemFilter(groupForQuestion(question).id);
+  } else {
+    renderQuestionList();
+  }
+  els.roomTitle.textContent = question.app.title;
+  els.roomSub.textContent = `${question.id}・${question.chapter_title}`;
 
-  if (!options.fromDeepLink) addUserMessage(makeChoiceTitle(question));
   addUserMessage(makeAskText(question));
 
   addMessage("相談室", makePlainLead(question), { kind: "system" });
   addChoiceMessage("相談室", "ここからどうしますか？", [
     {
       label: "くわしく聞く",
-      detail: "誰に聞くか選ぶ",
-      action: () => askAnswerTarget(question),
+      detail: `${speakerCountOf(question)}人の専門家が順番に回答`,
+      action: () => startDiscussion(question),
     },
     {
       label: "今週やることだけ知りたい",
@@ -361,267 +396,186 @@ function openQuestion(question, options = {}) {
     },
     {
       label: "別の悩みを選ぶ",
-      detail: "最初の質問に戻る",
+      detail: "悩みの大分類に戻る",
       action: () => startConversation(),
     },
   ]);
 }
 
-function askAnswerTarget(question) {
-  addUserMessage("くわしく聞きたい");
-  addChoiceMessage("相談室", "誰に聞きますか？\n全員を選ぶと、1人ずつ順番に聞けます。", [
-    {
-      label: "全員に聞く",
-      detail: "バイオリニスト、研究マニア、身体専門家の順",
-      action: () => startAllSpeakers(question),
-    },
-    ...SPEAKER_ORDER.map((speaker) => ({
-      label: `${speaker}に聞く`,
-      detail: speakerDetail(speaker),
-      action: () => showSpeakerAnswer(question, speaker, { mode: "single" }),
-    })),
-  ]);
-}
-
-function startAllSpeakers(question) {
-  addUserMessage("全員に聞く");
-  showSpeakerAnswer(question, SPEAKER_ORDER[0], { mode: "all", index: 0, silentUser: true });
-}
-
-async function showSpeakerAnswer(question, speaker, context = {}) {
+async function startDiscussion(question) {
   if (state.sending) return;
-  if (!context.silentUser) addUserMessage(`${speaker}に聞く`);
-  const turns = answerTurns(question, speaker);
-  if (!turns.length) {
-    addMessage("相談室", `${speaker}の回答はこの相談にはありません。`, { kind: "system" });
-    showAfterSpeakerChoices(question, speaker, turns, context);
+  disableStaleChoices();
+  const segments = buildDiscussionSegments(question);
+  if (!segments.length) {
+    addMessage("相談室", "この相談の答えがまだ入っていません。別の悩みを選んでください。", { kind: "system" });
+    addChoiceMessage("相談室", "次はどうしますか？", [
+      {
+        label: "近い悩みをもう一度選ぶ",
+        detail: groupLabelForQuestion(question),
+        action: () => chooseProblem(groupForQuestion(question)),
+      },
+      {
+        label: "別の悩みを選ぶ",
+        detail: "悩みの大分類に戻る",
+        action: () => startConversation(),
+      },
+    ]);
     return;
   }
-
-  state.lastAnswer = { question, speaker, turns, context };
-  addMessage("相談室", `${speaker}に聞いてみます。まずここからです。`, { kind: "system" });
-  showAnswerBlock(question, speaker, turns, buildAnswerSegments(turns), 0, context);
+  const speakerCount = new Set(segments.map((segment) => segment.speaker)).size;
+  addMessage("相談室", `${speakerCount}人が順番に答えます。まずは${segments[0].speaker}から。\n区切りごとに出るボタンで先へ進められます。`, { kind: "system" });
+  showDiscussionBlock(question, segments, 0);
 }
 
-async function showAnswerBlock(question, speaker, turns, segments, index, context = {}) {
+async function showDiscussionBlock(question, segments, index) {
   if (state.sending) return;
   const segment = segments[index];
   if (!segment) {
-    finishSpeakerAnswer(question, speaker, turns, context);
+    finishDiscussion(question);
     return;
   }
-  await sendPacedMessages([segment]);
-  showBlockCheckpoint(question, speaker, turns, segments, index, context);
+  await sendPacedMessages([{
+    speaker: segment.speaker,
+    text: segment.text,
+    options: { showName: segment.showName },
+  }]);
+  showDiscussionCheckpoint(question, segments, index);
 }
 
-function showBlockCheckpoint(question, speaker, turns, segments, index, context = {}) {
-  const isLast = index >= segments.length - 1;
-  addChoiceMessage("相談室", isLast ? "この返事はここまでです。どうしますか？" : "ここまでどうですか？", [
+function showDiscussionCheckpoint(question, segments, index) {
+  const current = segments[index];
+  const next = segments[index + 1];
+
+  if (!next) {
+    addChoiceMessage("相談室", "答えはここまでです。", [
+      {
+        label: "なるほど",
+        detail: "まとめの選択肢へ",
+        action: () => finishDiscussion(question),
+      },
+      {
+        label: "わからない",
+        detail: "いまの部分をかみ砕く",
+        action: () => showSegmentClarification(question, segments, index),
+      },
+    ], { compact: true });
+    return;
+  }
+
+  if (next.speaker !== current.speaker) {
+    addChoiceMessage("相談室", `${current.speaker}の話はここまで。次は${next.speaker}です。`, [
+      {
+        label: "続けて聞く",
+        detail: speakerDetail(next.speaker),
+        action: () => showDiscussionBlock(question, segments, index + 1),
+      },
+      {
+        label: "わからない",
+        detail: "いまの部分をかみ砕く",
+        action: () => showSegmentClarification(question, segments, index),
+      },
+      {
+        label: "ここで切り上げる",
+        detail: "今週やることなど、まとめへ",
+        action: () => finishDiscussion(question),
+      },
+    ]);
+    return;
+  }
+
+  addChoiceMessage("相談室", "ここまで大丈夫ですか？", [
     {
       label: "なるほど",
-      detail: isLast ? "次の選択肢へ" : "続きを読む",
-      action: () => {
-        if (isLast) {
-          finishSpeakerAnswer(question, speaker, turns, context);
-          return;
-        }
-        showAnswerBlock(question, speaker, turns, segments, index + 1, context);
-      },
+      detail: "続きを読む",
+      action: () => showDiscussionBlock(question, segments, index + 1),
     },
     {
       label: "わからない",
-      detail: "この部分だけかみ砕く",
-      action: () => showBlockClarification(question, speaker, turns, segments, index, context),
+      detail: "いまの部分をかみ砕く",
+      action: () => showSegmentClarification(question, segments, index),
     },
   ], { compact: true });
 }
 
-async function showBlockClarification(question, speaker, turns, segments, index, context = {}) {
+async function showSegmentClarification(question, segments, index) {
   if (state.sending) return;
-  addUserMessage("わからない");
   const segment = segments[index];
   await sendPacedMessages(segmentClarificationMessages(segment.text));
-  const isLast = index >= segments.length - 1;
+  const next = segments[index + 1];
   addChoiceMessage("相談室", "続けますか？", [
     {
-      label: "なるほど",
-      detail: isLast ? "次の選択肢へ" : "続きへ",
-      action: () => {
-        if (isLast) {
-          finishSpeakerAnswer(question, speaker, turns, context);
-          return;
-        }
-        showAnswerBlock(question, speaker, turns, segments, index + 1, context);
-      },
+      label: "なるほど、続きへ",
+      detail: next ? (next.speaker !== segment.speaker ? `次は${next.speaker}` : "続きを読む") : "まとめの選択肢へ",
+      action: () => (next ? showDiscussionBlock(question, segments, index + 1) : finishDiscussion(question)),
     },
     {
-      label: "他の質問をする",
-      detail: "悩みはどれ？に戻る",
-      action: () => startConversation(),
+      label: "ここで切り上げる",
+      detail: "今週やることなど、まとめへ",
+      action: () => finishDiscussion(question),
     },
   ], { compact: true });
 }
 
-function finishSpeakerAnswer(question, speaker, turns, context = {}) {
+function finishDiscussion(question) {
   maybeShowScoreAsset(question);
-  showAfterSpeakerChoices(question, speaker, turns, context);
-}
-
-function showAfterSpeakerChoices(question, speaker, turns, context = {}) {
-  const nextSpeaker = context.mode === "all"
-    ? SPEAKER_ORDER[context.index + 1]
-    : nextSpeakerAfter(speaker);
-
-  const choices = [];
-  if (nextSpeaker) {
-    choices.push({
-      label: `次の${nextSpeaker}に聞く`,
-      detail: speakerDetail(nextSpeaker),
-      action: () => showSpeakerAnswer(question, nextSpeaker, {
-        mode: context.mode || "single",
-        index: SPEAKER_ORDER.indexOf(nextSpeaker),
-      }),
-    });
-  }
-  choices.push(
-    {
-      label: "よくわからない",
-      detail: "今の返事を、情報を削らずに噛み砕く",
-      action: () => showClarification(question, speaker, turns),
-    },
-    {
-      label: "わかった",
-      detail: "ここで止める",
-      action: () => markUnderstood(question),
-    },
-    {
-      label: "他の質問をする",
-      detail: "悩みはどれ？に戻る",
-      action: () => startConversation(),
-    },
-  );
-  addChoiceMessage("相談室", "返事はここまでです。次はどうしますか？", choices);
+  showFollowupChoices(question, { exclude: "discussion" });
 }
 
 function showPrescription(question) {
-  addUserMessage("今週やることだけ知りたい");
-  addMessage("相談室", "まずやることだけに絞ります。全部を一度にやらなくて大丈夫です。", { kind: "system" });
-  const prescription = question.app?.prescription || question.prescription;
-  prescription.forEach((item, index) => {
-    addMessage("身体専門家", `${index + 1}. ${removeDenseParentheses(item)}`, { kind: "prescription", showName: index === 0 });
+  if (state.sending) return;
+  addMessage("相談室", "今週やることは、この通りです。全部を一度にやらなくて大丈夫です。", { kind: "system" });
+  question.app.prescription.forEach((item, index) => {
+    addMessage("相談室", `${index + 1}. ${item}`, { kind: "prescription", showName: false });
   });
   maybeShowScoreAsset(question);
-  showAfterAnswerChoices(question);
+  showFollowupChoices(question, { exclude: "prescription" });
 }
 
 function showSources(question) {
-  addUserMessage("出典を見たい");
+  if (state.sending) return;
   const text = question.sources.length
-    ? question.sources.map((source, index) => `${index + 1}. ${source}`).join("\n\n")
+    ? question.sources.map((source) => `・${source}`).join("\n")
     : "出典情報は未登録です。";
-  splitText(text, 180).forEach((part, index) => {
-    addMessage("相談室", part, { kind: "sources", showName: index === 0 });
-  });
-  showAfterAnswerChoices(question);
+  addMessage("相談室", text, { kind: "sources", showName: false });
+  showFollowupChoices(question, { exclude: "sources" });
 }
 
-function showAfterAnswerChoices(question) {
-  addChoiceMessage("相談室", "次はどうしますか？", [
-    {
-      label: "今週やること",
-      detail: "処方箋だけ見る",
+function showFollowupChoices(question, options = {}) {
+  const choices = [];
+  if (options.exclude !== "discussion") {
+    choices.push({
+      label: "くわしく聞く",
+      detail: `${speakerCountOf(question)}人の専門家が順番に回答`,
+      action: () => startDiscussion(question),
+    });
+  }
+  if (options.exclude !== "prescription") {
+    choices.push({
+      label: "今週やることを見る",
+      detail: "具体的な練習メニュー",
       action: () => showPrescription(question),
-    },
-    {
-      label: "出典",
-      detail: "元資料を見る",
+    });
+  }
+  if (options.exclude !== "sources") {
+    choices.push({
+      label: "出典を見る",
+      detail: "元になった本や資料",
       action: () => showSources(question),
-    },
+    });
+  }
+  choices.push(
     {
       label: "近い悩みをもう一度選ぶ",
       detail: groupLabelForQuestion(question),
       action: () => chooseProblem(groupForQuestion(question)),
     },
     {
-      label: "最初から選ぶ",
-      detail: "悩みはどれ？に戻る",
+      label: "別の悩みを選ぶ",
+      detail: "悩みの大分類に戻る",
       action: () => startConversation(),
     },
-  ]);
-}
-
-async function showClarification(question, speaker, turns) {
-  if (state.sending) return;
-  addUserMessage("よくわからない");
-  if (!turns.length) {
-    addMessage("相談室", `${speaker}の返事がないので、別の人を選んでください。`, { kind: "system" });
-    askAnswerTarget(question);
-    return;
-  }
-  const text = turns.map((turn) => turn.text).join(" ");
-  const glossary = glossaryFor(text);
-  const messages = [
-    {
-      speaker: "相談室",
-      text: "読み方を変えます。情報は削らず、結論、理由、やること、条件の順に並べ直します。",
-      options: { kind: "system" },
-    },
-    {
-      speaker: "相談室",
-      text: `一番効く一本はこれです。\n${coreSentence(text)}`,
-      options: { kind: "system" },
-    },
-    {
-      speaker: "相談室",
-      text: clarificationMap(text),
-      options: { kind: "system" },
-    },
-  ];
-
-  if (glossary.length) {
-    messages.push({
-      speaker: "相談室",
-      text: `先に言葉の足場を置きます。\n${glossary.map(([term, plain]) => `${term}: ${plain}`).join("\n")}`,
-      options: { kind: "system" },
-    });
-  }
-
-  messages.push(...fullClarificationMessages(text));
-
-  await sendPacedMessages(messages);
-  addChoiceMessage("相談室", "これでどうですか？", [
-    {
-      label: "わかった",
-      detail: "ここで止める",
-      action: () => markUnderstood(question),
-    },
-    {
-      label: `${speaker}の原文をもう一度読む`,
-      detail: "同じ人の返事に戻る",
-      action: () => showSpeakerAnswer(question, speaker, { mode: "single" }),
-    },
-    {
-      label: "他の質問をする",
-      detail: "悩みはどれ？に戻る",
-      action: () => startConversation(),
-    },
-  ]);
-}
-
-function markUnderstood(question) {
-  addUserMessage("わかった");
-  addChoiceMessage("相談室", "OKです。必要なら、ここから選べます。", [
-    {
-      label: "今週やることを見る",
-      detail: "処方箋だけ確認する",
-      action: () => showPrescription(question),
-    },
-    {
-      label: "他の質問をする",
-      detail: "悩みはどれ？に戻る",
-      action: () => startConversation(),
-    },
-  ]);
+  );
+  addChoiceMessage("相談室", "次はどうしますか？", choices);
 }
 
 function addMessage(speaker, text, options = {}) {
@@ -637,13 +591,13 @@ function addMessage(speaker, text, options = {}) {
       <div class="bubble ${kind}">${escapeHtml(text)}</div>
     </div>
   `;
-  els.chatBody.append(row);
+  appendChatRow(row);
   scrollToBottom();
   return row;
 }
 
 function addChoiceMessage(speaker, text, choices, options = {}) {
-  const row = addMessage(speaker, text, { kind: "system" });
+  const row = addMessage(speaker, text, { kind: "system", showName: false });
   const stack = row.querySelector(".message-stack");
   const grid = document.createElement("div");
   grid.className = `choice-grid${options.compact ? " compact" : ""}`;
@@ -652,26 +606,42 @@ function addChoiceMessage(speaker, text, choices, options = {}) {
     button.type = "button";
     button.className = `choice-button${options.compact ? " compact" : ""}`;
     button.innerHTML = `<strong>${escapeHtml(choice.label)}</strong>${choice.detail ? `<small>${escapeHtml(choice.detail)}</small>` : ""}`;
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      if (state.sending) return;
+      state.focusNextGrid = event.detail === 0;
       grid.querySelectorAll("button").forEach((item) => item.disabled = true);
       button.classList.add("chosen");
+      if (!choice.silent) addUserMessage(choice.label);
       choice.action();
     });
     grid.append(button);
   });
   stack.append(grid);
+  if (state.focusNextGrid) {
+    state.focusNextGrid = false;
+    grid.querySelector("button")?.focus({ preventScroll: true });
+  }
   scrollToBottom();
+}
+
+function disableStaleChoices() {
+  els.chatBody.querySelectorAll(".choice-button:not(:disabled)").forEach((button) => {
+    button.disabled = true;
+  });
 }
 
 async function sendPacedMessages(messages) {
   state.sending = true;
-  for (const item of messages) {
-    showTyping(item.speaker);
-    await wait(messageDelay(item.text));
-    removeTyping();
-    addMessage(item.speaker, item.text, item.options || {});
+  try {
+    for (const item of messages) {
+      showTyping(item.speaker);
+      await wait(messageDelay(item.text));
+      removeTyping();
+      addMessage(item.speaker, item.text, item.options || {});
+    }
+  } finally {
+    state.sending = false;
   }
-  state.sending = false;
 }
 
 function showTyping(speaker) {
@@ -699,20 +669,30 @@ function wait(ms) {
 
 function messageDelay(text) {
   const length = String(text || "").length;
-  return Math.max(520, Math.min(1250, 420 + length * 8));
+  return Math.max(420, Math.min(1100, 320 + length * 7));
 }
 
 function addUserMessage(text) {
   const row = document.createElement("div");
   row.className = "message-row user";
   row.innerHTML = `<div class="bubble user">${escapeHtml(text)}</div>`;
+  appendChatRow(row);
+  scrollToBottom(true);
+}
+
+// チャットDOMの無限成長を防ぐ（長いセッションでも描画を軽く保つ）
+function appendChatRow(row) {
   els.chatBody.append(row);
-  scrollToBottom();
+  if (els.chatBody.children.length > 600) {
+    [...els.chatBody.children].slice(0, 200).forEach((node) => node.remove());
+  }
 }
 
 function maybeShowScoreAsset(question) {
   if (!question.assetPath) return;
-  if (els.chatBody.querySelector(`[data-asset-id="${question.id}"]`)) return;
+  const rows = [...els.chatBody.children];
+  const existing = rows.findIndex((row) => row.dataset && row.dataset.assetId === question.id);
+  if (existing >= 0 && rows.length - existing <= 40) return;
   const info = SPEAKERS["相談室"];
   const row = document.createElement("div");
   row.className = "message-row";
@@ -720,15 +700,22 @@ function maybeShowScoreAsset(question) {
   row.innerHTML = `
     <img class="avatar" src="${info.avatar}" alt="">
     <div class="message-stack">
-      <div class="speaker">相談室</div>
       <div class="bubble image-bubble">
-        <img src="${escapeAttribute(question.assetPath)}" alt="">
+        <img src="${escapeAttribute(question.assetPath)}" alt="${escapeAttribute(question.score_caption || "関連図版")}">
         <div class="caption">${escapeHtml(question.score_caption || "関連図版")}</div>
       </div>
     </div>
   `;
   els.chatBody.append(row);
+  const image = row.querySelector(".image-bubble img");
+  if (image && !image.complete) {
+    image.addEventListener("load", () => scrollToBottom(), { once: true });
+  }
   scrollToBottom();
+}
+
+function speakerCountOf(question) {
+  return new Set((question.app.discussion || []).map((turn) => turn.speaker)).size || 3;
 }
 
 function speakerDetail(speaker) {
@@ -738,26 +725,17 @@ function speakerDetail(speaker) {
   return "";
 }
 
-function nextSpeakerAfter(speaker) {
-  const index = SPEAKER_ORDER.indexOf(speaker);
-  return index >= 0 ? SPEAKER_ORDER[index + 1] : null;
-}
-
-function answerTurns(question, speaker) {
-  const answer = question.app?.speaker_answers?.[speaker];
-  if (answer) return [{ speaker, text: answer }];
-  return question.discussion.filter((turn) => turn.speaker === speaker);
-}
-
-function buildAnswerSegments(turns) {
+function buildDiscussionSegments(question) {
   const segments = [];
-  turns.forEach((turn) => {
-    splitText(turn.text, ANSWER_BLOCK_LENGTH).forEach((part, index) => {
+  let lastSpeaker = null;
+  question.app.discussion.forEach((turn) => {
+    splitText(turn.text, ANSWER_BLOCK_LENGTH).forEach((part) => {
       segments.push({
         speaker: turn.speaker,
         text: part,
-        options: { showName: index === 0 },
+        showName: turn.speaker !== lastSpeaker,
       });
+      lastSpeaker = turn.speaker;
     });
   });
   return segments;
@@ -765,41 +743,28 @@ function buildAnswerSegments(turns) {
 
 function segmentClarificationMessages(text) {
   const glossary = glossaryFor(text);
-  const lines = splitForClarification(text).map((sentence) => `${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`);
+  const core = coreSentence(text);
+  const rest = splitForClarification(text).filter((sentence) => sentence !== core);
+  const lines = rest.map((sentence) => `・${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`);
   const messages = [
     {
       speaker: "相談室",
-      text: `この部分の言いたいことはこれです。\n${coreSentence(text)}`,
-      options: { kind: "system" },
+      text: `この部分の言いたいことはこれです。\n${core}`,
+      options: { kind: "system", showName: false },
     },
   ];
   if (glossary.length) {
     messages.push({
       speaker: "相談室",
-      text: `言葉の足場です。\n${glossary.map(([term, plain]) => `${term}: ${plain}`).join("\n")}`,
-      options: { kind: "system" },
+      text: `言葉の意味はこうです。\n${glossary.map(([term, plain]) => `${term} = ${plain}`).join("\n")}`,
+      options: { kind: "system", showName: false },
     });
   }
-  if (lines.length) {
+  if (lines.length >= 2) {
     messages.push({
       speaker: "相談室",
-      text: `順番にほどくと、こうです。\n${lines.join("\n")}`,
-      options: { kind: "system" },
-    });
-  }
-  return messages;
-}
-
-function fullClarificationMessages(text) {
-  const lines = splitForClarification(text).map((sentence, index) => (
-    `${index + 1}. ${sentenceLabel(sentence)}: ${simplifySentence(sentence)}`
-  ));
-  const messages = [];
-  for (let i = 0; i < lines.length; i += 4) {
-    messages.push({
-      speaker: "相談室",
-      text: `${i === 0 ? "細かい条件も落とさず、まとまりごとにほどきます。" : "続きです。"}\n${lines.slice(i, i + 4).join("\n")}`,
-      options: { kind: "system" },
+      text: `残りの部分をほどくと、こうです。\n${lines.join("\n")}`,
+      options: { kind: "system", showName: false },
     });
   }
   return messages;
@@ -812,21 +777,6 @@ function glossaryFor(text) {
 function coreSentence(text) {
   const sentences = splitForClarification(text);
   return sentences.find((sentence) => /まず|つまり|原因|大事|今日|必要|してください/u.test(sentence)) || sentences[0] || "";
-}
-
-function clarificationMap(text) {
-  const sentences = splitForClarification(text);
-  const conclusion = coreSentence(text);
-  const reason = sentences.find((sentence) => /理由|原因|ので|から|ため/u.test(sentence)) || conclusion;
-  const action = sentences.find((sentence) => /してください|やる|練習|置き|戻|見る|組み込/u.test(sentence)) || conclusion;
-  const condition = sentences.find((sentence) => /ただし|目安|週間|毎日|無理|できれば|範囲/u.test(sentence)) || "";
-  return [
-    "全体地図です。",
-    `1. 結論: ${shorten(simplifySentence(conclusion), 62)}`,
-    `2. 理由: ${shorten(simplifySentence(reason), 62)}`,
-    `3. やること: ${shorten(simplifySentence(action), 62)}`,
-    condition ? `4. 条件: ${shorten(simplifySentence(condition), 62)}` : "4. 条件: ここでは大きな例外や目安は出ていません。",
-  ].join("\n");
 }
 
 function sentenceLabel(sentence) {
@@ -851,64 +801,18 @@ function simplifySentence(sentence) {
   HARD_WORDS.forEach(([term, plain]) => {
     result = result.replaceAll(term, `${term}（${plain}）`);
   });
-  PLAIN_REWRITES.forEach(([pattern, replacement]) => {
-    result = result.replace(pattern, replacement);
-  });
-  return result
-    .replace(/ということです。?$/u, "という意味です。")
-    .replace(/というわけです。?$/u, "という流れです。")
-    .replace(/必要があります/u, "必要です")
-    .replace(/考えてください/u, "考えると分かりやすいです")
-    .trim();
-}
-
-function makeChoiceTitle(question) {
-  if (question.app?.title) return question.app.title;
-  return question.title
-    .replace(/された$/u, "される")
-    .replace(/しんどい$/u, "つらい")
-    .replace(/\?$/u, "")
-    .trim();
+  return result.trim();
 }
 
 function makeAskText(question) {
-  const cleaned = question.app?.question || sanitizeQuestion(question.question);
-  const profile = question.app?.profile || profileForQuestion(question);
-  return `これで困っています。\n${cleaned}${profile ? `\n\n${profile}` : ""}`;
+  const profile = question.app.profile;
+  return `これで困っています。\n${question.app.question}${profile ? `\n\n${profile}` : ""}`;
 }
 
 function makePlainLead(question) {
-  const prescription = question.app?.prescription || question.prescription;
-  const first = removeDenseParentheses(prescription[0] || "");
+  const first = removeDenseParentheses(question.app.prescription[0] || "");
   if (!first) return "まずは状況を分けて考えます。今すぐ全部を直そうとせず、できるところから見ます。";
   return `まず短く言うと、最初に見るのはここです。\n${first}`;
-}
-
-function sanitizeQuestion(text) {
-  return String(text || "")
-    .replace(/[A-Z]\.?[A-Z]?\.?さん（[^）]+）/gu, "")
-    .replace(/\d+歳の息子/gu, "子ども")
-    .replace(/\d+歳の娘/gu, "子ども")
-    .replace(/\d+歳[、,]/gu, "")
-    .replace(/\d+代[、,]/gu, "")
-    .replace(/バイオリン歴[^\s、。]+[、,]?/gu, "")
-    .replace(/レッスン歴[^\s、。]+[、,]?/gu, "")
-    .replace(/再入門して[^\s、。]+[、,]?/gu, "")
-    .replace(/\s+/gu, " ")
-    .trim();
-}
-
-function profileForQuestion(question) {
-  const persona = String(question.persona || "");
-  const childMatch = persona.match(/^(.+?)[（(]([^）)]+)[）)]の(母|父|保護者)$/u);
-  if (childMatch) return `相談の前提: ${childMatch[2]}の子どもについて、${childMatch[3]}からの相談。`;
-  const namedMatch = persona.match(/^[^（(]+[（(]([^）)]+)[）)]$/u);
-  const summary = (namedMatch ? namedMatch[1] : persona)
-    .replace(/^[A-Z]\.?[A-Z]?\.?さん/u, "")
-    .replace(/^[A-Z]\.?[A-Z]?\.?/u, "")
-    .replace(/\s+/gu, " ")
-    .trim();
-  return summary ? `相談の前提: ${summary}。` : "";
 }
 
 function removeDenseParentheses(text) {
@@ -921,7 +825,7 @@ function removeDenseParentheses(text) {
 
 function splitText(text, maxLength) {
   const normalized = String(text || "").replace(/\s+/g, " ").trim();
-  if (normalized.length <= maxLength) return [normalized];
+  if (normalized.length <= maxLength) return normalized ? [normalized] : [];
   const sentences = normalized.match(/[^。！？!?]+[。！？!?]?/g) || [normalized];
   const chunks = [];
   let current = "";
@@ -952,26 +856,16 @@ function questionsForGroup(group) {
 }
 
 function groupMatchesQuestion(group, question) {
-  return keywordMatchesGroup(group, question) || group.chapterHints.includes(question.chapter);
+  return group.chapterHints.includes(question.chapter) || keywordMatchesGroup(group, question);
 }
 
 function keywordMatchesGroup(group, question) {
-  const haystack = groupMatchText(question);
+  const haystack = normalize(`${question.app.title} ${question.app.question}`);
   return group.keywords.some((keyword) => haystack.includes(normalize(keyword)));
 }
 
-function groupMatchText(question) {
-  return normalize([
-    question.app?.title,
-    question.app?.question,
-    question.title,
-    makeChoiceTitle(question),
-  ].join(" "));
-}
-
 function groupForQuestion(question) {
-  return PROBLEM_GROUPS.find((group) => keywordMatchesGroup(group, question))
-    || PROBLEM_GROUPS.find((group) => group.chapterHints.includes(question.chapter))
+  return PROBLEM_GROUPS.find((group) => group.chapterHints.includes(question.chapter))
     || PROBLEM_GROUPS[0];
 }
 
@@ -984,7 +878,9 @@ function shorten(text, limit) {
   return value.length > limit ? `${value.slice(0, limit)}...` : value;
 }
 
-function scrollToBottom() {
+function scrollToBottom(force = false) {
+  const nearBottom = els.chatBody.scrollHeight - els.chatBody.scrollTop - els.chatBody.clientHeight < 180;
+  if (!force && !nearBottom) return;
   requestAnimationFrame(() => {
     els.chatBody.scrollTop = els.chatBody.scrollHeight;
   });

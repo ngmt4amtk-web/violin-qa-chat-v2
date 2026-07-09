@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0aa45d">
-  <title>バイオリンQ&Aトーク</title>
+  <meta name="theme-color" content="#087c49">
+  <meta name="description" content="バイオリンの悩み200問に、バイオリニスト・研究マニア・身体専門家の3人がチャット形式で答える相談室です。">
+  <title>バイオリンQ&A相談室</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="assets/avatars/room.svg">
   <link rel="apple-touch-icon" href="assets/avatars/violinist.png">
-  <link rel="stylesheet" href="styles.css?v=20260706-apprewrite">
+  <link rel="stylesheet" href="styles.css?v=20260710-1">
 </head>
 <body>
   <main class="app-shell">
@@ -16,13 +18,14 @@
         <p class="eyebrow">Violin Q&A 200</p>
         <h1>相談を選ぶ</h1>
         <div class="search-box">
-          <input id="searchInput" type="search" placeholder="悩み・本文・話者で検索" autocomplete="off">
+          <input id="searchInput" type="search" placeholder="悩み・キーワードで検索" autocomplete="off">
         </div>
       </div>
 
       <div class="chapter-strip" id="chapterStrip" aria-label="章フィルター"></div>
 
-      <div class="filter-row" aria-label="深さフィルター">
+      <div class="filter-row" aria-label="答えの深さフィルター">
+        <span class="filter-label">答えの深さ</span>
         <button class="filter-chip active" type="button" data-tier="all">すべて</button>
         <button class="filter-chip" type="button" data-tier="1">軽め</button>
         <button class="filter-chip" type="button" data-tier="2">標準</button>
@@ -36,7 +39,7 @@
     <section class="phone-wrap" aria-label="トーク画面">
       <div class="phone">
         <header class="chat-header">
-          <button class="icon-button" id="menuButton" type="button" aria-label="相談一覧を開く">
+          <button class="icon-button" id="menuButton" type="button" aria-label="相談一覧を開く" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
           <div class="header-title">
@@ -52,7 +55,7 @@
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
-  <script src="data/questions.js?v=20260706-apprewrite"></script>
-  <script src="app.js?v=20260706-apprewrite"></script>
+  <script src="data/questions.js?v=20260710-1"></script>
+  <script src="app.js?v=20260710-1"></script>
 </body>
 </html>
