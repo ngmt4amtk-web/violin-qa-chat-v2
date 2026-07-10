@@ -175,16 +175,18 @@ function readQuestions() {
         chapter_title: chapters.find((chapter) => chapter.id === raw.chapter)?.title || "",
         score_caption: applyOverrides(String(raw.score_caption || ""), raw.id, "score_caption") || null,
         assetPath,
+        // 出典は書籍と研究論文のみ表示（内部リサーチ・事例・動画等は非表示。2026-07-10指示）
         sources: formatSources(raw.sources)
           .map((entry) => applyOverrides(entry, raw.id, "sources"))
-          .filter(Boolean),
+          .filter(Boolean)
+          .filter((entry) => /^【(書籍|書籍（海外）|研究論文)】/u.test(entry)),
         tier: raw.tier,
         app: buildAppContent(raw),
       });
     }
   }
 
-  return questions.sort((a, b) => a.id.localeCompare(b.id, "ja"));
+  return questions;
 }
 
 // 相談者情報を分解する。
@@ -412,17 +414,60 @@ function scrubQuestion(text) {
     .trim();
 }
 
+// アプリの吹き出し1つぶんの長さ。app.js側の分割ロジックを廃止し、ここで確定させる
+const ANSWER_BLOCK_LENGTH = 170;
+
+function splitText(text, maxLength) {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxLength) return [normalized];
+  const sentences = normalized.match(/[^。！？!?]+[。！？!?]?/g) || [normalized];
+  const chunks = [];
+  let current = "";
+  sentences.forEach((sentence) => {
+    const next = current ? `${current}${sentence}` : sentence;
+    if (next.length <= maxLength) {
+      current = next;
+      return;
+    }
+    if (current) chunks.push(current);
+    if (sentence.length <= maxLength) {
+      current = sentence;
+      return;
+    }
+    for (let i = 0; i < sentence.length; i += maxLength) chunks.push(sentence.slice(i, i + maxLength));
+    current = "";
+  });
+  if (current) chunks.push(current);
+  const compact = chunks.filter(Boolean);
+  if (compact.length > 1 && compact[compact.length - 1].length <= 8) {
+    compact[compact.length - 2] = `${compact[compact.length - 2]}${compact.pop()}`;
+  }
+  return compact;
+}
+
+// 「わからない」用の平易版（軍団生成）。{qid: [[ブロックごとの平易文,…], …]} = [ターン][ブロック]
+const PLAINS_PATH = path.join(__dirname, "plains.json");
+const plains = existsSync(PLAINS_PATH) ? JSON.parse(readFileSync(PLAINS_PATH, "utf8")) : {};
+
 function buildAppContent(question) {
   const { profile, replacements } = parsePersona(question.persona);
-  const discussion = question.discussion.map((turn) => ({
-    speaker: turn.speaker,
+  const questionPlains = plains[question.id] || [];
+  const discussion = question.discussion.map((turn, turnIndex) => {
     // 冒頭の呼びかけ「K.Mさん、」は置換すると「あなた、」と不自然になるため除去する
-    text: applyOverrides(
+    const text = applyOverrides(
       anonymize(turn.text, replacements).replace(/^(?:あなた|お子さん)、\s*/u, ""),
       question.id,
       "discussion"
-    ),
-  }));
+    );
+    const turnPlains = questionPlains[turnIndex] || [];
+    return {
+      speaker: turn.speaker,
+      blocks: splitText(text, ANSWER_BLOCK_LENGTH).map((block, blockIndex) => (
+        turnPlains[blockIndex] ? { t: block, p: turnPlains[blockIndex] } : { t: block }
+      )),
+    };
+  });
   return {
     title: applyOverrides(String(question.title || "").trim(), question.id, "title"),
     question: applyOverrides(scrubQuestion(question.question), question.id, "question"),
@@ -454,7 +499,28 @@ function copyQuestionAsset(assetName) {
   return `assets/source/${safeName}`;
 }
 
-const questions = readQuestions();
+function readExtraQuestions() {
+  const extraDir = path.join(projectRoot, "extra", "qa");
+  if (!existsSync(extraDir)) return [];
+  return readdirSync(extraDir)
+    .filter((name) => /^q\d+\.json$/u.test(name))
+    .sort()
+    .map((name) => {
+      const raw = JSON.parse(readFileSync(path.join(extraDir, name), "utf8"));
+      return {
+        id: raw.id,
+        chapter: raw.chapter,
+        chapter_title: chapters.find((chapter) => chapter.id === raw.chapter)?.title || "",
+        score_caption: raw.score_caption || null,
+        assetPath: null,
+        sources: (raw.sources_display || []).filter((entry) => /^【(書籍|書籍（海外）|研究論文)】/u.test(entry)),
+        tier: raw.tier,
+        app: buildAppContent(raw),
+      };
+    });
+}
+
+const questions = [...readQuestions(), ...readExtraQuestions()].sort((a, b) => a.id.localeCompare(b.id, "ja"));
 const payload = {
   source: {
     path: "qa300-book-2026/chapters_v2",

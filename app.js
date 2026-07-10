@@ -153,10 +153,9 @@ function init() {
   const deepLinkId = params.get("q")?.toUpperCase();
   const deepLinked = deepLinkId && DATA.questions.find((q) => q.id === deepLinkId);
   if (deepLinked) {
-    openQuestion(deepLinked, { fromDeepLink: true });
-    if (params.get("view") === "answer" || params.get("view") === "clarify") {
-      startDiscussion(deepLinked);
-    }
+    const straightToAnswer = params.get("view") === "answer" || params.get("view") === "clarify";
+    openQuestion(deepLinked, { fromDeepLink: true, skipChoices: straightToAnswer });
+    if (straightToAnswer) startDiscussion(deepLinked);
     return;
   }
 
@@ -245,7 +244,7 @@ function getFilteredQuestions() {
         q.app.title,
         q.app.question,
         q.app.profile,
-        (q.app.discussion || []).map((turn) => turn.text).join(" "),
+        (q.app.discussion || []).map((turn) => (turn.blocks || []).map((block) => block.t).join(" ")).join(" "),
         (q.app.prescription || []).join(" "),
       ].join(" "));
       return haystack.includes(query);
@@ -377,6 +376,34 @@ function openQuestion(question, options = {}) {
 
   addUserMessage(makeAskText(question));
 
+  if (options.skipChoices) return;
+
+  addChoiceMessage("相談室", "この悩みですね。どうしますか？", [
+    {
+      label: "答えを聞く",
+      detail: "まず要点から",
+      action: () => showLead(question),
+    },
+    {
+      label: "今週やることだけ知りたい",
+      detail: "具体的な練習メニューだけ見る",
+      action: () => showPrescription(question),
+    },
+    ...(question.sources.length ? [{
+      label: "出典を見る",
+      detail: "元になった本や論文を見る",
+      action: () => showSources(question),
+    }] : []),
+    {
+      label: "別の悩みを選ぶ",
+      detail: "悩みの大分類に戻る",
+      action: () => startConversation(),
+    },
+  ]);
+}
+
+function showLead(question) {
+  if (state.sending) return;
   addMessage("相談室", makePlainLead(question), { kind: "system" });
   addChoiceMessage("相談室", "ここからどうしますか？", [
     {
@@ -385,15 +412,15 @@ function openQuestion(question, options = {}) {
       action: () => startDiscussion(question),
     },
     {
-      label: "今週やることだけ知りたい",
-      detail: "具体的な練習メニューだけ見る",
+      label: "今週やることを見る",
+      detail: "具体的な練習メニュー",
       action: () => showPrescription(question),
     },
-    {
+    ...(question.sources.length ? [{
       label: "出典を見る",
-      detail: "元になった本や資料を見る",
+      detail: "元になった本や論文",
       action: () => showSources(question),
-    },
+    }] : []),
     {
       label: "別の悩みを選ぶ",
       detail: "悩みの大分類に戻る",
@@ -500,7 +527,14 @@ function showDiscussionCheckpoint(question, segments, index) {
 async function showSegmentClarification(question, segments, index) {
   if (state.sending) return;
   const segment = segments[index];
-  await sendPacedMessages(segmentClarificationMessages(segment.text));
+  const messages = segment.plain
+    ? [{
+        speaker: "相談室",
+        text: `かみ砕くと、こうです。\n${segment.plain}`,
+        options: { kind: "system", showName: false },
+      }]
+    : segmentClarificationMessages(segment.text);
+  await sendPacedMessages(messages);
   const next = segments[index + 1];
   addChoiceMessage("相談室", "続けますか？", [
     {
@@ -556,10 +590,10 @@ function showFollowupChoices(question, options = {}) {
       action: () => showPrescription(question),
     });
   }
-  if (options.exclude !== "sources") {
+  if (options.exclude !== "sources" && question.sources.length) {
     choices.push({
       label: "出典を見る",
-      detail: "元になった本や資料",
+      detail: "元になった本や論文",
       action: () => showSources(question),
     });
   }
@@ -729,10 +763,11 @@ function buildDiscussionSegments(question) {
   const segments = [];
   let lastSpeaker = null;
   question.app.discussion.forEach((turn) => {
-    splitText(turn.text, ANSWER_BLOCK_LENGTH).forEach((part) => {
+    (turn.blocks || []).forEach((block) => {
       segments.push({
         speaker: turn.speaker,
-        text: part,
+        text: block.t,
+        plain: block.p || null,
         showName: turn.speaker !== lastSpeaker,
       });
       lastSpeaker = turn.speaker;
@@ -823,33 +858,6 @@ function removeDenseParentheses(text) {
     .trim();
 }
 
-function splitText(text, maxLength) {
-  const normalized = String(text || "").replace(/\s+/g, " ").trim();
-  if (normalized.length <= maxLength) return normalized ? [normalized] : [];
-  const sentences = normalized.match(/[^。！？!?]+[。！？!?]?/g) || [normalized];
-  const chunks = [];
-  let current = "";
-  sentences.forEach((sentence) => {
-    const next = current ? `${current}${sentence}` : sentence;
-    if (next.length <= maxLength) {
-      current = next;
-      return;
-    }
-    if (current) chunks.push(current);
-    if (sentence.length <= maxLength) {
-      current = sentence;
-      return;
-    }
-    for (let i = 0; i < sentence.length; i += maxLength) chunks.push(sentence.slice(i, i + maxLength));
-    current = "";
-  });
-  if (current) chunks.push(current);
-  const compact = chunks.filter(Boolean);
-  if (compact.length > 1 && compact[compact.length - 1].length <= 8) {
-    compact[compact.length - 2] = `${compact[compact.length - 2]}${compact.pop()}`;
-  }
-  return compact;
-}
 
 function questionsForGroup(group) {
   return DATA.questions.filter((question) => groupMatchesQuestion(group, question));
