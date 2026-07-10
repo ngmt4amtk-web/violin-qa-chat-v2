@@ -471,7 +471,7 @@ function buildAppContent(question) {
   return {
     title: applyOverrides(String(question.title || "").trim(), question.id, "title"),
     question: applyOverrides(scrubQuestion(question.question), question.id, "question"),
-    profile,
+    profile: applyOverrides(profile, question.id, "profile"),
     discussion,
     prescription: question.prescription.map((item) =>
       applyOverrides(anonymize(item, replacements), question.id, "prescription")
