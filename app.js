@@ -23,57 +23,49 @@ const PROBLEM_GROUPS = [
   {
     id: "pain",
     label: "痛み・疲れがある",
-    detail: "肩、首、顎、指、耳、腱鞘炎など",
-    keywords: ["痛", "疲", "姿勢がつら", "腱鞘炎", "痣", "内出血", "キーン", "冷え", "目が限界", "再発"],
+    detail: "肩、首、顎、腰、頭痛、腱鞘炎など",
     chapterHints: [13],
   },
   {
     id: "setup",
     label: "構え・脱力で迷う",
     detail: "姿勢、肩当て、顎当て、力み、支え",
-    keywords: ["構え", "姿勢", "骨盤", "反り腰", "肩当て", "顎当て", "脱力", "力み", "支え", "固ま", "高さ", "角度"],
     chapterHints: [1],
   },
   {
     id: "bow-sound",
     label: "弓・音色がうまくいかない",
-    detail: "右手、ボーイング、音量、ガリガリ音",
-    keywords: ["弓", "右腕", "右手", "ロングトーン", "移弦", "音色", "音量", "ガリ", "キーキー", "ざらつ", "駒", "鳴ら", "接点", "スピッカート", "ソティエ", "リコシェ", "スタッカート"],
+    detail: "弓の持ち方、右手、音量、雑音、跳ばし弓",
     chapterHints: [2, 3, 8],
   },
   {
     id: "left-hand",
     label: "音程・左手で困る",
     detail: "指、シフト、ビブラート、ポジション",
-    keywords: ["音程", "小指", "親指", "指が", "指を", "指の", "手首", "ネック", "シフト", "サード", "ポジション", "ビブラート", "トリル", "跳躍", "左手"],
     chapterHints: [4, 5, 6],
   },
   {
     id: "reading-speed",
     label: "譜読み・速い所で崩れる",
     detail: "速い音符、リズム、暗譜、初見",
-    keywords: ["速い", "音符", "リズム", "裏拍", "譜", "暗譜", "初見", "休符", "迷子", "左右", "16分", "変拍子", "臨時記号", "先が読めない", "読めない"],
     chapterHints: [7, 9],
   },
   {
     id: "expression",
     label: "表現・曲作りで迷う",
     detail: "感情、強弱、ルバート、解釈",
-    keywords: ["感情", "表現", "正確", "退屈", "ロボット", "間", "クレッシェンド", "piano", "ルバート", "暖かい音", "解釈", "音量"],
     chapterHints: [10],
   },
   {
     id: "practice-stage",
     label: "練習・本番・心がしんどい",
     detail: "続かない、緊張、比較、本番、録音",
-    keywords: ["練習しない", "練習できない", "練習が", "本番", "スマホ", "上達", "辞め", "比べ", "下手", "心", "集中", "怖", "レッスン", "録音", "客席", "緊張", "辛く", "苛立"],
     chapterHints: [11, 12],
   },
   {
     id: "teacher-gear",
-    label: "先生・道具・環境で迷う",
-    detail: "先生、独学、楽器、弦、ペグ、チューナー",
-    keywords: ["先生", "youtube", "独学", "弦高", "ペグ", "チューナー", "ミュート", "レンタル", "体格", "ヴィオラ", "連絡", "指導", "ネット", "才能", "楽譜が見え", "楽器と体格"],
+    label: "先生・学び方・道具で迷う",
+    detail: "先生、独学、始める年齢、楽器、弦、調弦",
     chapterHints: [14, 15, 16],
   },
 ];
@@ -864,12 +856,7 @@ function questionsForGroup(group) {
 }
 
 function groupMatchesQuestion(group, question) {
-  return group.chapterHints.includes(question.chapter) || keywordMatchesGroup(group, question);
-}
-
-function keywordMatchesGroup(group, question) {
-  const haystack = normalize(`${question.app.title} ${question.app.question}`);
-  return group.keywords.some((keyword) => haystack.includes(normalize(keyword)));
+  return group.chapterHints.includes(question.chapter);
 }
 
 function groupForQuestion(question) {
